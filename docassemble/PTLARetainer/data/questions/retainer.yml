@@ -1,0 +1,660 @@
+metadata:
+  title: |
+    PTLA Retainer
+  short title: |
+    PTLA Retainer
+  description: |
+    This interview allows advocates to generate, sign,
+    and email a retainer agreement to a client and receive
+    a signed copy back. This program was originally authored by Dane W. Henry, Esq. of Legal Aid of West Virginia, Inc. and has been customized for use by Pine Tree Legal Assistance, Inc. 
+  authors:
+    - name: Original code authored by Dane W. Henry, Esq., modified for PTLA by Jack Haycock
+      organization: Original code developed for Legal Aid of West Virginia, Inc., modified for Pine Tree Legal Assistance, Inc.
+  revision_date: July 8, 2025
+  unlisted: True
+---
+features:
+  #javascript: docassemble.LAWVCommon:data/static/force_lightmode.js
+  css: ptlaretainer.css
+  #css: docassemble.LAWVCommon:data/static/lawv.css
+---
+include: 
+  - docassemble.AssemblyLine:assembly_line.yml
+  - docassemble.ALToolbox:collapse_template.yml
+---
+objects:
+  - attorneys: ALIndividual
+  - b: ALIndividual
+  - clients: ALIndividual
+  - custodian: ALIndividual
+  - endpoint: DADict
+---
+mandatory: True
+code: |
+  multi_user = True
+  attorney_setup
+  #atty_date = current_datetime()
+  if not birthdays_match:
+    failure_reason = "Sorry the birthday you entered did not match."
+    challenge_fail
+  #if retainer == 'bha':
+    #if bha_review == 'reject':
+      #if defined(b):
+        #recipients = [a,b]
+      #else:
+        #recipients = [a]
+      #send_email(to=recipients,template=client_reject)      
+      #reject
+  #elif retainer == 'fast':
+    #if fast_review == 'reject':
+      #if defined(b):
+        #recipients = [a,b]
+      #else:
+        #recipients = [a]
+      #send_email(to=recipients,template=client_reject)      
+      #reject
+  else:
+    if client_review == 'reject':
+      if defined(b):
+        recipients = [attorneys,b]
+      else:
+        recipients = [attorneys]
+      send_email(to=recipients,template=client_reject)      
+      reject
+  c_method
+  if c_method == 'type':
+    #if (retainer == 'bha' or retainer == 'fast') and custodian_present == True:
+      #c.signature = '/s/ ' + custodian.name.full()
+    #else:
+    clients1_signature = '/s/ ' + clients1_name
+  date = current_datetime()
+  clients1_signature
+  final_screen  
+---
+# Two options for handling this: either we remove the role selection feature entirely so only attys can use the form, or modify it so paralegals can use it and have it relayed to atty. and then client in the proper order...will need to test and experiment with how those options might work. 
+ga id: roleSelect
+question: |
+  Select your role
+field: role_select
+choices:
+  - Attorney: advocate
+  - Paralegal: para_behalf
+  #- Paralegal for own client: para_self
+  #- Legal Assistant on behalf of attorney or FAST/BHA: la_attorney
+  #- Legal Assistant on behalf of paralegal: la_para
+---
+code: |
+  legal_retainer = 'Full' 
+---
+# May remove this
+ga id: behalfOfInfo
+question: |
+  First, enter your information
+subquestion: |
+  Your information is needed to get a copy of the signed retainer
+  without needing to go to the attorney or paralegal.
+fields:
+  - First Name: b.name.first
+  - Last Name: b.name.last
+  - Email Address: b.email
+    datatype: email 
+---
+ga id: attorneyInfo
+question: |
+  % if role_select == "advocate" or role_select == "para_self":
+    First, enter your information
+  % else:
+    First, enter the information of the person for whom you are completing the retainer
+  % endif
+subquestion: |
+  The information is needed to get the signed retainer
+  agreement back from the client.
+fields:
+  - Attorney Name: attorneys1_name
+  #- Last Name: attorneys1_name_last
+  - Email Address: attorneys.email
+    datatype: email
+---
+ga id: clientInfo
+question: |
+  Now, enter some information about the client
+subquestion: |
+  Information about the client is used to make sure
+  the person who receives the retainer is the client
+
+fields:
+  - Client Name: clients1_name
+  #- Last Name: clients1_name_last
+  - Birthdate: clients1_birthdate
+    datatype: date
+  - Email Address: clients.email
+    datatype: email
+---
+ga id: citizenship
+question: |
+  Is the client a U.S. Citizen?
+yesno: citizen
+---
+#question: |
+#  You must complete the Non-Citizen Status Questionnaire
+#subquestion: |
+#  Remember that non-citizen applicants and clients must qualify
+#  under LSC regulations.  
+#  
+#  A copy of the questionnaire can be found
+#  below:
+#  
+#  [[FILE non_citizen_status_worksheet.png]](${ url_of('non_citizen_status_worksheet.pdf') })
+#continue button field: reminder
+---
+ga id: retainerType
+question: |
+  Please select the type of retainer
+field: retainer
+choices:
+  - English Legal Retainer (Full, with Attorney Fee Addendum & Citizenship): english
+  - Spanish Legal Retainer (Full, with Attorney Fee Addendum & Citizenship): spanish
+  #- FAST Advocate Retainer: fast
+  #- BHA Advocate Retainer: bha
+  
+#How to handle variations and translations? Dropdown select? Retainer + Citizenship + Atty. Fee Ad. (English), R+C+F (French), - this method will get very unweildy if listing out all options. Maybe two stages - document select and then language select? Similar to how this program handles the full/limited question after this retainerType question  
+---
+ga id: retainerScope
+question: |
+  Please provide the scope of the retainer
+#subquestion: |
+#  This applies whether the retainer is limited or full
+fields:
+  - no label: legal_scope
+    input type: area
+    maxlength: 1200
+    
+# Our retainer has an additional field for specificity - will handle it much the same as this scope question, which we also have. Will need to add another additional (optional) question for statement of facts, which will need to be presented to clients for review, as well. Typically only in affirmative cases, but N. mentions doing it as a matter of course, so want to make sure to leave the option explicitly open for attys., not just based on a question about whether case is affirmative or not.  
+---
+id: retainerSpecifics
+question: |
+  Specificity: identify the parties; docket number if known, address, date of hearing or event; and issue e.g. eviction, lawsuit on warranty of habitability, or pfa
+fields:
+  - no label: legal_specs
+    input type: area
+    maxlength: 1200
+---
+id: facts
+question: |
+  Is this an affirmative case where we need a client statement of facts for the retainer?
+yesno: facts
+---
+id: facts statements
+question: |
+  Please describe the facts of the case
+fields:
+  - no label: facts_statement
+    input type: area
+    maxlength: 2000
+---
+id: opposing
+question: |
+  What is the name of the opposing party or parties in this case?
+fields:
+  - Opposing Party Name: OP_name
+---
+ga id: attorneySignature
+question: |
+  How would you like the name signed?
+subquestion: |
+  **Typed** will insert '/s/ ${ attorneys1_name }'
+
+  **Digitally Sign** will allow you to use the mouse, trackpad,
+  or finger (device depending) to sign your name
+field: a_method
+choices:
+  - Type: type
+  - Digitally Sign: sign
+under: |
+  After you sign, an email will be generated
+  to the client for them to sign, then a copy
+  will be provided to both of you.
+---
+ga id: attorneyDigitalSignature
+question: |
+  Sign your name
+signature: attorneys1_signature
+under: |
+  ${ attorneys1_name }
+---
+ga id: clientBirthday
+question: |
+  % if defined('custodian.name.first'):
+  Please enter the client's birthday
+  % else:
+  Please enter your birthday
+  % endif
+fields:
+  - no label: challenge
+    datatype: date  
+---
+ga id: legalRetainerReview
+question: |
+  Retainer Review
+subquestion: |
+  ${ role } ${ attorneys1_name } is going to assist with the following:
+
+  Scope of representation:
+
+  ${ legal_scope }
+  
+  Specific details of representation:
+  
+  ${ legal_specs }
+  
+  % if facts:
+  These are the basic facts of the case:
+  
+  ${ facts_statement }
+  % endif
+  
+  The retainer, your agreement with Pine Tree Legal Assistance, has the following terms. Click on the underlined text below to expand the box and read each term. If you have questions, or don't understand any of the terms, please contact the person you are working with at PTLA before agreeing.
+  
+  % if citizen:
+  You confirm that you are a U.S. Citizen;
+  % endif
+  
+  ${ collapse_template(fees) }
+  
+  ${ collapse_template(ptla_duties) }
+  
+  ${ collapse_template(client_duties) }
+  
+  ${ collapse_template(end_agreement) }
+
+field: client_review
+Buttons:
+  - I Agree: agree
+  - I Reject: reject
+under: |
+  **Note**: Rejecting the terms does not force the ${ role } to alter the scope of representation.
+  A notice will be sent to the ${ role } notifying them you do not accept the terms and this
+  interview will close.
+---
+ga id: clientSignature
+question: |
+  How would you like your name signed?
+subquestion: |
+  % if defined('custodian.name.first'):
+  **Typed** will insert '/s/ ${ custodian.name.full() }'
+  % else:
+  **Typed** will insert '/s/ ${ clients1_name }'
+  % endif
+
+  **Digitally Sign** will allow you to use the mouse, trackpad,
+  or finger (device depending) to sign your name
+field: c_method
+choices:
+  - Type: type
+  - Digitally Sign: sign
+under: |
+  After you sign the retainer a copy will be provided to both you and your ${ role }.
+---
+ga id: clientDigitalSignature
+question: |
+  Please sign
+signature: clients1_signature
+under: |
+  ${ clients1_name }
+
+---
+event: attorney_final
+question: |
+  Email Sent - Done for now
+subquestion: |
+  An email has been sent to ${ clients.email } for them to 
+  review the terms and sign.  Once signed, a copy will
+  be sent to your email: ${ attorneys.email }  
+action buttons:
+  - label: Leave
+    action: https://ptla.org/
+    color: warning
+    icon: sign-out-alt
+need:
+  - attorney_setup
+---
+ga id: retainerComplete
+event: final_screen
+question: |
+  Thank You. 
+subquestion: |
+  % if client_emailed and attorney_emailed:
+  Thank you for completing the signature. 
+  
+  A copy will be sent to your email: ${ clients.email },
+  and to your ${ role }.
+  % else:
+  There was a problem sending the e-mail.
+  % endif
+action buttons:
+  - label: Exit
+    action: https://ptla.org/
+    color: danger
+    icon: sign-out-alt
+---
+ga id: rejectRetainer
+event: reject
+question: |
+  You have rejected the retainer
+subquestion: |
+  A notification will be sent to your ${ role }.
+action buttons:
+  - label: Exit
+    action: https://ptla.org/
+    color: danger
+    icon: sign-out-alt
+---
+code: |
+  if retainer == 'english':
+    if legal_retainer == 'Full':
+      client_emailed = send_email(to=clients,attachments=[full,addendum],template=see_attached)
+    #elif legal_retainer == 'Limited':
+      #client_emailed = send_email(to=c,attachments=limited,template=see_attached)
+  elif retainer == 'spanish':
+    if legal_retainer == 'Full':
+      client_emailed = send_email(to=clients,attachments=full_spanish,template=see_attached)
+    #elif legal_retainer == 'Limited':
+      #client_emailed = send_email(to=c,attachments=limited_spanish,template=see_attached)
+  #elif retainer == 'fast':
+    #client_emailed = send_email(to=c,attachments=fast,template=see_attached)
+  #elif retainer == 'bha':
+    #client_emailed = send_email(to=c,attachments=bha,template=see_attached)  
+---
+code: |
+  if defined('b'):
+    if retainer == 'english':
+      if legal_retainer == 'Full':
+        attorney_emailed = send_email(to=attorneys,cc=b,attachments=[full,addendum],template=behalf_attached)
+      #elif legal_retainer == 'Limited':
+        #attorney_emailed = send_email(to=attorneys,cc=b,attachments=limited,template=behalf_attached)
+    elif retainer == 'spanish':
+      if legal_retainer == 'Full':
+        attorney_emailed = send_email(to=attorneys,cc=b,attachments=full_spanish,template=behalf_attached)
+      #elif legal_retainer == 'Limited':
+        #attorney_emailed = send_email(to=a,cc=b,attachments=limited_spanish,template=behalf_attached)
+    #elif retainer == 'fast':
+      #attorney_emailed = send_email(to=a,cc=b,attachments=fast,template=behalf_attached)
+    #elif retainer == 'bha':
+      #attorney_emailed = send_email(to=a,cc=b,attachments=bha,template=behalf_attached)
+  else:
+    if retainer == 'english':
+      if legal_retainer == 'Full':
+        attorney_emailed = send_email(to=attorneys,attachments=[full,addendum],template=see_attached)
+      #elif legal_retainer == 'Limited':
+        #attorney_emailed = send_email(to=a,attachments=limited,template=see_attached)
+    elif retainer == 'spanish':
+      if legal_retainer == 'Full':
+        attorney_emailed = send_email(to=attorneys,attachments=full_spanish,template=see_attached)
+      #elif legal_retainer == 'Limited':
+        #attorney_emailed = send_email(to=a,attachments=limited_spanish,template=see_attached)
+    #elif retainer == 'fast':
+      #attorney_emailed = send_email(to=a,attachments=fast,template=see_attached)
+    #elif retainer == 'bha':
+      #attorney_emailed = send_email(to=a,attachments=bha,template=see_attached)
+---
+event: ineligible
+question: |
+  It appears you encountered a problem
+subquestion: |  
+  Reason: ${ failure_reason }  
+buttons: 
+  - Exit: exit
+  - Restart: restart
+---
+ga id: challengeFail
+event: challenge_fail
+question: |
+  It appears you encountered a problem
+subquestion: |  
+  Reason: ${ failure_reason }  
+action buttons:
+  - label: Exit
+    action: https://www.ptla.org
+    color: danger
+    icon: sign-out-alt
+back button: True
+back button label: |
+  Wait, go back
+---
+template: fees
+subject: |
+  Fees and Costs
+content: |
+  Pine Tree Legal Assistance will not charge the Client for legal work. If the opposing party is ordered to pay attorneys’ fees, however, Pine Tree Legal Assistance will keep those fees.
+  
+    Pine Tree Legal Assistance may ask the Client to pay for certain costs, such as court filing fees and service costs. In certain cases, Pine Tree may advance out of pocket costs or expenses in order to properly represent the Client. In such a case, if monetary damages are awarded to the Client, the Client will reimburse Pine Tree for those costs and expenses.
+    
+    In certain cases, Pine Tree may be entitled to recover reasonable attorneys’ fees from the opposing party. The Client agrees that Pine Tree may seek such attorneys’ fees and, if they are awarded, that Pine Tree will retain them. The Client further agrees to cooperate with Pine Tree in obtaining these fees.
+---
+template: ptla_duties
+subject: |
+  Pine Tree's Duties
+content: |
+  Pine Tree will keep the Client’s case private, with the following exception. Pine Tree is required by law to disclose certain information to the Legal Services Corporation including, but not limited to, Clients’ names, eligibility information, and retainer agreements. The Client agrees to this limited sharing of information. Pine Tree will follow all other standard ethical and professional rules.
+  
+  Pine Tree will keep the Client informed about what is going on in their case. 
+  
+  Pine Tree will not settle any part of the case without the Client’s approval. The Client agrees that he/she will not settle the case directly with the opposing party without consulting Pine Tree. 
+  
+  When Pine Tree is no longer representing the Client, it will return any original documents to the Client or preserve them according to Maine Bar Rules.  If the Client asks, Pine Tree will give them, as soon as possible, any case file documents which the Client has the right to receive. 
+
+  Pine Tree will allow the Client to file a grievance if the Client is not satisfied with Pine Tree’s services. 
+---
+template: client_duties
+subject: |
+  Client's Duties
+content: |
+  The Client will tell Pine Tree right away about any changes in his/her:
+  <ul>
+  <li>current address</li>
+  <li>telephone number</li>
+  <li>household size</li>
+  <li>household income and finances</li>
+  </ul>
+  
+  The Client will cooperate with Pine Tree in preparing his/her case.  This includes providing any necessary releases or documents. This may include documents Pine Tree needs in order to show that the Client is eligible for Pine Tree’s services. 
+
+  The Client will tell Pine Tree right away if the lawyer for the opposing party contacts them directly. 
+---
+template: end_agreement
+subject: |
+  Ending the Agreement
+content: |
+  The Client may end this agreement at any time by notifying Pine Tree.  The Client should do this in writing, if possible, and should state clearly that they no longer wants Pine Tree’s services or no longer wants to pursue the legal matter.  In some cases, Pine Tree must get the Court’s approval to withdraw from the case.
+
+  Subject to the Maine Bar Rules, Pine Tree may end this agreement before completing the case for any of these reasons: 
+  <ul>
+  <li>Pine Tree cannot locate the Client;</li>
+  <li>the Client has not kept in contact with Pine Tree and has not given Pine Tree the information it needs to stay in contact;</li>
+  <li>the Client is no longer financially eligible for Pine Tree’s services;</li>
+  <li>the Client does not obey a court order that Pine Tree advises the Client to obey;</li>
+  <li>Pine Tree is required to withdraw due to a conflict of interest;</li>
+  <li>the Client and Pine Tree have a major disagreement about case strategies or goals;</li>
+  <li>the Client does not tell Pine Tree important information about the case, or does something that makes it difficult for Pine Tree to represent the Client;</li>
+  <li>there are many other reasons under the Maine Bar Rules that require or allow Pine Tree’s withdrawal from the case.</li>
+  </ul>
+  
+  Pine Tree will send notice of its intent to end this agreement to the Client’s last known address.  Pine Tree will also ask the court’s permission to withdraw from the case, if court rules require it. 
+---
+template: notification
+subject: |
+  A document is awaiting your signature.
+content: |
+  Dear ${ clients1_name },
+  
+  ${ role } ${ attorneys1_name } has created a document for you to review and sign. If you have any questions, or do not understand any of the terms, please contact ${ role } ${ attorneys1_name }. 
+  
+  After you sign it, a copy will be emailed to you for your records.
+
+  Please click the following URL:
+
+  [${ interview_url() }](${ interview_url() })
+
+  Pine Tree Legal Assistance
+
+  *NOTE: This email address is not monitored.  Please do not reply to this message.  
+  Contact your attorney or paralegal through your normal method of communication.*
+---
+template: client_reject
+subject: |
+  ${ clients1_name } has rejected the document.
+content: |
+  Dear ${ attorneys1_name },
+  
+  ${ clients1_name } has rejected the document.  Please contact them.
+
+  Pine Tree Legal Assistance
+---
+template: see_attached
+subject: |
+  A document has been created.
+content: |
+  Please see the attached signed document.
+
+  *NOTE: This email address is not monitored.  Please do not reply to this message.  
+  Contact your attorney or paralegal through your normal method of communication.*
+---
+template: behalf_attached
+subject: |
+  A document has been created.
+content: |
+  ${ b.name.full() } has created a document on behalf of ${ attorneys1_name } for ${ clients1_name }.
+
+  The document has been attached and should be retained for your records.  A copy of the document has
+  been sent to ${ clients1_name } at ${ clients.email }.
+---
+attachment:
+  - name: Full Retainer Agreement
+    filename: ${ clients1_name } Full Retainer
+    pdf template file: Docassemble_PTLA_Retainer.pdf
+    editable: False
+    skip undefined: True
+    variable name: full
+    fields:
+      - "date__1": |
+          ${ date.format() if citizen == True else '' }
+      - "clients1_signature__1": |
+          ${ clients1_signature if citizen == True else '' }
+      - "clients1_signature_text_1": |
+          ${ '/s/ ' + clients1_name if c_method == 'type' and citizen == True else ''}
+      - "legal_scope": ${ legal_scope }
+      - "legal_specs": ${ legal_specs }
+      - "clients1_name__1": ${ clients1_name }
+      - "clients1_name__2": ${ clients1_name }
+      - "clients1_name__3": ${ clients1_name }
+      - "facts_statement": ${ facts_statement }
+      - "attorneys1_name": ${ attorneys1_name }
+      - "clients1_signature__2": ${ clients1_signature }
+      - "clients1_signature_text_2": |
+          ${ '/s/ ' + clients1_name if c_method == 'type' else '' }
+      - "date__2": ${ date.format() }
+      - "attorneys1_signature": ${ attorneys1_signature }
+      - "attorney_signature_text": |
+          ${ '/s/ ' + attorneys1_name if a_method == 'type' else '' }
+      - "atty_date": ${ atty_date.format() }
+      - "clients1_signature__3": ${ clients1_signature }
+      - "clients1_signature_text_3": |
+          ${ '/s/ ' + clients1_name if c_method == 'type' else '' }
+      - "date__3": ${ date.format() }
+---
+attachment:
+  - name: Full Retainer Agreement
+    filename: ${ clients1_name } Full Retainer
+    pdf template file: full_spanish.pdf
+    editable: False
+    variable name: full_spanish
+    fields:
+      - "date__1": |
+          ${ date.format() if citizen == True else '' }
+      - "clients1_signature__1": |
+          ${ clients1_signature if citizen == True else '' }
+      - "clients1_signature_text_1": |
+          ${ '/s/ ' + clients1_name if c_method == 'type' and citizen == True else ''}
+      - "scope": ${ legal_scope }
+      - "legal_specs": ${ legal_specs }
+      - "clients1_name__1": ${ clients1_name }
+      - "attorneys1_name": ${ attorneys1_name }
+      - "clients1_signature__2": ${ clients1_signature }
+      - "clients1_signature_text_2": |
+          ${ '/s/ ' + clients1_name if c_method == 'type' else '' }
+      - "date__2": ${ date.format() }
+      - "attorney_signature": ${ attorneys1_signature }
+      - "attorney_signature_text": |
+          ${ '/s/ ' + attorneys1_name if a_method == 'type' else '' }
+      - "atty_date": ${ atty_date.format() }
+      - "clients1_signature__3": ${ clients1_signature }
+      - "clients1_signature_text_3": |
+          ${ '/s/ ' + clients1_name if c_method == 'type' else '' }
+      - "date__3": ${ date.format() }
+---
+attachment:
+  - name: Attorney Fee Addendum
+    filename: ${ clients1_name } Attorney Fee Addendum
+    pdf template file: Docassemble_Attorney_Fee_Addendum.pdf
+    editable: False
+    skip undefined: True
+    variable name: addendum
+    fields:
+      - "OP_name": ${ OP_name }
+      - "clients1_signature__4": ${ clients1_signature }
+      - "clients1_signature_text_4": |
+          ${ '/s/ ' + clients1_name if c_method == 'type' else '' }
+      - "date__4": ${ date.format() }
+---
+code: |
+  role_select
+  if role_select == "advocate":
+    role = "Advocate"
+  elif role_select == "para_behalf":
+    role = "Advocate"
+    b.name.first
+  #elif role_select == "para_self":
+    #role = "Paralegal"
+  #elif role_select == "la_attorney":
+    #role = "Advocate"
+    #b.name.first
+  #elif role_select == "la_para":
+    #role = "Paralegal"
+    #b.name.first
+  attorneys1_name
+  clients1_name
+  citizen
+  #if not citizen:
+  #  reminder
+  retainer
+  if retainer == 'english' or retainer == 'spanish':    
+    legal_retainer
+    legal_scope
+    legal_specs
+    OP_name
+    facts
+    if facts:
+      facts_statement
+    #if legal_retainer == 'Limited':
+      #limited_options
+  #elif retainer == 'fast':
+    #custodian_present
+    #fast_options
+  #elif retainer == 'bha':
+    #custodian_present
+    #bha_options
+  atty_date = today()
+  a_method
+  if a_method == 'type':
+    attorneys1_signature = '/s/' + attorneys1_name
+  attorneys1_signature
+  send_email(to=clients,template=notification)
+  attorney_setup = True
+  prevent_going_back()
+  force_ask('attorney_final')
+---
+code: |
+  if clients1_birthdate.format() == challenge.format():
+    birthdays_match = True
+  else:
+    birthdays_match = False
